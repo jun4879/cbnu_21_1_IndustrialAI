@@ -2,43 +2,57 @@ from durable.lang import *
 
 # 규칙 15가지
 # 1. AI팀 오전 10시 데이터 EDA 회의
-# 2.
-# 3. 팀장은 월요일 팀장 회의 참석
-# 4. 외근 중 회사 차량 사용 시 사용일지 작성
-# 5. 회의실 화이트보드에 회의실 사용 알림 사항 작성
-# 6. 사무실 화이트보드에 연차 현황 작성
-# 7. 사무실 화이트보드에 외근 현황 작성
-# 8.
-# 9.
-# 10.
-# 11.
-# 12.
+# 2. 팀장은 월요일마다 팀장 회의 참석
+# 3. 휴가 시 사무실 화이트보드에 연차 현황 작성
+# 4. 전 직원 월요일 아침 청소
+# 5.
+# 6.
+# 7.
+# 8. 협업 간 코드 수정 부분 pull, push 하기 전 팀원들과 공유
+# 9. 사무실 화이트보드에 외근 현황 작성
+# 10.야근 시 저녁 식사 인원 조사하여 취합
+# 11.외근 중 회사 차량 사용 시 사용일지 작성
+# 12.회의실 화이트보드에 회의실 사용 알림 사항 작성
 # 13.
 # 14.
 # 15.
 
-with ruleset('dlit'): # 규칙 집합
-    # antecedent(조건부), @whel_all, @when_any를 사용하여 표기
-    @when_all(m.position == '팀장') # m: rule이 적용되는 데이터
-    def team_leader_meeting(c):
-        # consequent(결론부)
-        c.assert_fact({'subject':c.m.subject, 'predicate':'는','object':'월요일에 팀장 회의에 참석해야 함'})
+fact_list = [{'subject': 'A', 'position': '사원', 'vacation': True,  'part': 'AI',
+              'added_work': False, 'wants_dinner': False},
+             {'subject': 'B', 'position': '사원', 'vacation': False, 'part': 'AI',
+              'added_work': True,  'wants_dinner': True},
+             {'subject': 'C', 'position': '사원', 'vacation': False, 'part': 'AI',
+              'added_work': True,  'wants_dinner': False},
+             {'subject': 'D', 'position': '팀장', 'vacation': False, 'part': 'AI',
+              'added_work': False, 'wants_dinner': False},
+             {'subject': 'E', 'position': '팀장', 'vacation': False, 'part': 'MES',
+              'added_work': False, 'wants_dinner': False}
+             ]
 
-    @when_all(m.vacation == 1)
+
+with ruleset('dlit'):  # 규칙 집합
+    @when_all(m.position != 0)
+    def cleaning(c):
+        print('{0}는 월요일 아침 청소 실시'.format(c.m.subject))
+
+    @when_all(m.vacation == True)
     def vacation_notification(c):
-        c.assert_fact({'subject': c.m.subject, 'predicate': '는', 'object': '알림판에 연차일 작성'})
+        print('{0}는 알림판에 연차일 작성'.format(c.m.subject))
 
-    @when_all((m.part == 'AI') and (m.vacation != 1))
+    @when_all(m.position == '팀장')
+    def team_leader_meeting(c):
+        print('{0}는 월요일 팀장 회의 참석'.format(c.m.subject))
+
+    @when_all((m.part=='AI') & (m.vacation != True))
     def AI_team_meeting(c):
-        c.assert_fact({'subject': c.m.subject, 'predicate': '는', 'object': '오전 10시 EDA 회의 참석'})
-        # object에 미팅 바로 쓰지 말고 회의 유무 상태로 넘겨서 회의실 알림판에 작성
-        # 인원 단위로 묶어서 알림판 작성하지 않고 팀 단위로 알림판 작성되도록
+        print('{0}는 오전 10시 AI팀 EDA 회의 참석'.format(c.m.subject))
 
-    @when_all(+m.subject) # m.subject가 한 번 이상
-    def output(c):
-        print('Fact: {0} {1} {2}'.format(c.m.subject, c.m.predicate, c.m.object))
+    @when_all((m.added_work == True) & (m.wants_dinner == True))
+    def eat_dinner(c):
+        print('{0}는 저녁 식사 인원'.format(c.m.subject))
 
-post('dlit', {'subject':'A','position':'사원','vacation':True,'part':'AI'})
-post('dlit', {'subject':'B','position':'사원','vacation':False,'part':'AI'})
-post('dlit', {'subject':'C','position':'팀장','vacation':False,'part':'MES'})
+# assert_fact
 
+for i in fact_list:
+    assert_fact('dlit', {'subject': i['subject'], 'position': i['position'], 'vacation': i['vacation'],
+                         'part': i['part'], 'added_work': i['added_work'],  'wants_dinner': i['wants_dinner']})
