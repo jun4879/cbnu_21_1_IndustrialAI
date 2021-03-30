@@ -3,13 +3,13 @@ from durable.lang import *
 # 규칙 15가지
 # 1. AI팀 오전 10시 데이터 EDA 회의
 # 2. 팀장은 월요일마다 팀장 회의 참석
-# 3. 휴가 시 사무실 화이트보드에 연차 현황 작성
+# 3. 연차 시 사무실 화이트보드에 연차 현황 작성
 # 4. 전 직원 월요일 아침 청소
 # 5. 회의실 화이트보드에 회의실 사용 알림 사항 작성
 # 6. 사무실 화이트보드에 외근 현황 작성
 # 7. 외근 중 회사 차량 사용 시 사용일지 작성
 # 8. 야근 시 저녁 식사 인원 조사하여 취합
-# 9.
+# 9. 수요일 자유 발표 시간 발표자 8:40분까지 발표 준비
 # 10.
 # 11.
 # 12.
@@ -18,22 +18,22 @@ from durable.lang import *
 # 15.
 
 fact_dict_list = [{'subject': 'A', 'position': '사원', 'vacation': True,  'part': 'AI',
-                   'added_work': False, 'wants_dinner': False,
+                   'added_work': False, 'wants_dinner': False, 'presentation': False,
                    'out_work': False, 'use_company_car': False},
                   {'subject': 'B', 'position': '사원', 'vacation': False, 'part': 'AI',
-                   'added_work': True,  'wants_dinner': True,
+                   'added_work': True,  'wants_dinner': True, 'presentation': False,
                    'out_work': False, 'use_company_car': False},
                   {'subject': 'C', 'position': '사원', 'vacation': False, 'part': 'AI',
-                   'added_work': True,  'wants_dinner': False,
+                   'added_work': True,  'wants_dinner': False, 'presentation': True,
                    'out_work': False, 'use_company_car': False},
                   {'subject': 'D', 'position': '팀장', 'vacation': False, 'part': 'AI',
-                   'added_work': False, 'wants_dinner': False,
+                   'added_work': False, 'wants_dinner': False, 'presentation': False,
                    'out_work': True, 'use_company_car': False},
                   {'subject': 'E', 'position': '팀장', 'vacation': False, 'part': 'MES',
-                   'added_work': False, 'wants_dinner': False,
+                   'added_work': False, 'wants_dinner': False, 'presentation': False,
                    'out_work': False, 'use_company_car': False},
                   {'subject': 'F', 'position': '사원', 'vacation': False, 'part': 'MES',
-                   'added_work': True, 'wants_dinner': False,
+                   'added_work': True, 'wants_dinner': False, 'presentation': False,
                    'out_work': True, 'use_company_car': True}
                   ]
 
@@ -56,8 +56,8 @@ with ruleset('dlit'):
     @when_all(m.position == '팀장')
     def team_leader_meeting(c):
         print('{0}는 월요일 팀장 회의 참석'.format(c.m.subject))
-        if {'내용':'팀장 회의'} not in meeting_room_white_board_list:
-            meeting_room_white_board_list.append({'내용':'팀장 회의'})
+        if {'내용':'월요일 팀장 회의'} not in meeting_room_white_board_list:
+            meeting_room_white_board_list.append({'내용':'월요일 팀장 회의'})
 
     @when_all((m.part == 'AI') & (m.vacation != True))
     def AI_team_meeting(c):
@@ -81,12 +81,19 @@ with ruleset('dlit'):
             company_car_using['state'] = True
             company_car_using['person'] = c.m.subject
 
+    @when_all(m.presentation == True)
+    def presentation(c):
+        print('{0}는 수요일 발표 준비'.format(c.m.subject))
+        if "수요일 발표 : ".format(c.m.subject) not in meeting_room_white_board_list:
+            meeting_room_white_board_list.append("수요일 발표 : {0}".format(c.m.subject))
+
 print("===직원별 fact 목록===")
 # assert_fact
 for i in fact_dict_list:
     assert_fact('dlit', {'subject': i['subject'], 'position': i['position'], 'vacation': i['vacation'],
                          'part': i['part'], 'added_work': i['added_work'],  'wants_dinner': i['wants_dinner'],
-                         'out_work': i['out_work'], 'use_company_car': i['use_company_car']})
+                         'out_work': i['out_work'], 'use_company_car': i['use_company_car'],
+                         'presentation': i['presentation']})
 
 print("======알림======")
 print("휴가자: ", " ".join(str(vacation) for vacation in vacation_list))
