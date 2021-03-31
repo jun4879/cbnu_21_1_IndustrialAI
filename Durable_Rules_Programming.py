@@ -10,9 +10,10 @@ from durable.lang import *
 # 7. 외근 중 회사 차량 사용 시 사용일지 작성
 # 8. 야근 시 저녁 식사 인원 조사하여 취합
 # 9. 수요일 자유 발표 시간 발표자 8:40분까지 발표 준비
-# 10.
-# 11.
-# 12.
+# EDA 관련 규칙
+# 10. 결측치가 많은 칼럼 drop
+# 11. 명목변수 형변환 ('코드' ~ 바코드, 품목코드)
+# 12. 날짜 칼럼 datetime 형으로 변환
 # 13.
 # 14.
 # 15.
@@ -108,3 +109,39 @@ else:
 print("======회의======")
 for meeting_plan in meeting_room_white_board_list:
     print(meeting_plan)
+
+# EDA 규칙 집합
+
+ratio_nan = 0.9
+
+data_fact_list = [{'col_name': '비고란', 'type': 'object', 'row_num': 100, 'nan_num': 95},
+                  {'col_name': '바코드', 'type': 'int', 'row_num': 100, 'nan_num': 15},
+                  {'col_name': '품명', 'type': 'object', 'row_num': 100, 'nan_num': 0},
+                  {'col_name': '품목코드', 'type': 'object', 'row_num': 100, 'nan_num': 0},
+                  {'col_name': '입고일자', 'type': 'object', 'row_num': 100, 'nan_num': 0},
+                  {'col_name': '발주일자', 'type': 'datetime', 'row_num': 100, 'nan_num': 0},
+                  ]
+
+with ruleset('EDA'):
+    @when_all(+m.col_name)
+    def toStrEncoding(c):
+        if c.m.col_name.find('코드') != -1:  # find 함수 : 문자열이 존재하면 문자열의 index 위치 반환, 존재하지 않으면 -1 반환
+            if c.m.type == 'int' or c.m.type == 'float':
+                print('{0}: str 형태로 타입 변환 필요'.format(c.m.col_name))
+
+    @when_all((m.nan_num > 0) & (m.row_num > 0))
+    def dropColumn(c):
+        if ((c.m.nan_num / c.m.row_num) >= ratio_nan):
+            print('{0}: 결측치가 많아 column drop 필요'.format(c.m.col_name))
+
+    @when_all(+m.col_name)
+    def toDateTime(c):
+        if c.m.col_name.find('일자') != -1:
+            if c.m.type != 'datetime':
+                print('{0}: datetime 형태로 타입 변환 필요'.format(c.m.col_name))
+
+print("\nEDA 규칙 집합")
+print("===EDA data fact 목록===")
+for i in data_fact_list:
+    assert_fact('EDA', {'col_name': i['col_name'], 'row_num': i['row_num'],'nan_num': i['nan_num'],
+                        'type': i['type']})
