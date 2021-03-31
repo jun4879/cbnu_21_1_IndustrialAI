@@ -11,12 +11,12 @@ from durable.lang import *
 # 8. 야근 시 저녁 식사 인원 조사하여 취합
 # 9. 수요일 자유 발표 시간 발표자 8:40분까지 발표 준비
 # EDA 관련 규칙
-# 10. 결측치가 많은 칼럼 drop
+# 10. 결측치가 너무 많은 칼럼은 drop
 # 11. 명목변수 형변환 ('코드' ~ 바코드, 품목코드)
 # 12. 날짜 칼럼 datetime 형으로 변환
 # 13. int나 float 타입 칼럼은 기초통계량 확인 및 차트 형태 시각화를 통해 분석
-# 14. 
-# 15.
+# 14. 결측치가 존재하는 칼럼에 대한 결측치 처리 방안 논의
+# 15. 이상치가 존재하는 칼럼에 대한 이상처 처리 방안 논의
 
 fact_dict_list = [{'subject': 'A', 'position': '사원', 'vacation': True,  'part': 'AI',
                    'added_work': False, 'wants_dinner': False, 'presentation': False,
@@ -114,13 +114,13 @@ for meeting_plan in meeting_room_white_board_list:
 
 ratio_nan = 0.9
 
-data_fact_list = [{'col_name': '비고란', 'type': 'object', 'row_num': 100, 'nan_num': 95},
-                  {'col_name': '바코드', 'type': 'int', 'row_num': 100, 'nan_num': 15},
-                  {'col_name': '품명', 'type': 'object', 'row_num': 100, 'nan_num': 0},
-                  {'col_name': '품목코드', 'type': 'object', 'row_num': 100, 'nan_num': 0},
-                  {'col_name': '입고일자', 'type': 'object', 'row_num': 100, 'nan_num': 0},
-                  {'col_name': '발주일자', 'type': 'datetime', 'row_num': 100, 'nan_num': 0},
-                  {'col_name': '수량', 'type': 'int', 'row_num': 100, 'nan_num': 0}
+data_fact_list = [{'col_name': '비고란', 'type': 'object', 'row_num': 100, 'nan_num': 95, 'outlier_exist': False},
+                  {'col_name': '바코드', 'type': 'int', 'row_num': 100, 'nan_num': 15, 'outlier_exist': False},
+                  {'col_name': '품명', 'type': 'object', 'row_num': 100, 'nan_num': 0, 'outlier_exist': False},
+                  {'col_name': '품목코드', 'type': 'object', 'row_num': 100, 'nan_num': 0, 'outlier_exist': False},
+                  {'col_name': '입고일자', 'type': 'object', 'row_num': 100, 'nan_num': 0, 'outlier_exist': False},
+                  {'col_name': '발주일자', 'type': 'datetime', 'row_num': 100, 'nan_num': 0, 'outlier_exist': False},
+                  {'col_name': '수량', 'type': 'int', 'row_num': 100, 'nan_num': 0, 'outlier_exist': True}
                   ]
 
 with ruleset('EDA'):
@@ -146,8 +146,17 @@ with ruleset('EDA'):
         if c.m.col_name.find('코드') == -1:
             print('{0}: 기초 통계량 및 시각화를 통한 분석 필요'.format(c.m.col_name))
 
+    @when_all(m.nan_num > 0)
+    def drop_column(c):
+        if ((c.m.nan_num / c.m.row_num) <= ratio_nan):
+            print('{0}: 결측치 처리 방안 논의 필요'.format(c.m.col_name))
+
+    @when_all(m.outlier_exist == True)
+    def drop_column(c):
+        print('{0}: 이상치 처리 방안 논의 필요'.format(c.m.col_name))
+
 print("\nEDA 규칙 집합")
 print("===EDA data fact 목록===")
 for i in data_fact_list:
     assert_fact('EDA', {'col_name': i['col_name'], 'row_num': i['row_num'],'nan_num': i['nan_num'],
-                        'type': i['type']})
+                        'type': i['type'], 'outlier_exist': i['outlier_exist']})
