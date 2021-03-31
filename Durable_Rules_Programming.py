@@ -14,8 +14,8 @@ from durable.lang import *
 # 10. 결측치가 많은 칼럼 drop
 # 11. 명목변수 형변환 ('코드' ~ 바코드, 품목코드)
 # 12. 날짜 칼럼 datetime 형으로 변환
-# 13.
-# 14.
+# 13. int나 float 타입 칼럼은 기초통계량 확인 및 차트 형태 시각화를 통해 분석
+# 14. 
 # 15.
 
 fact_dict_list = [{'subject': 'A', 'position': '사원', 'vacation': True,  'part': 'AI',
@@ -120,25 +120,31 @@ data_fact_list = [{'col_name': '비고란', 'type': 'object', 'row_num': 100, 'n
                   {'col_name': '품목코드', 'type': 'object', 'row_num': 100, 'nan_num': 0},
                   {'col_name': '입고일자', 'type': 'object', 'row_num': 100, 'nan_num': 0},
                   {'col_name': '발주일자', 'type': 'datetime', 'row_num': 100, 'nan_num': 0},
+                  {'col_name': '수량', 'type': 'int', 'row_num': 100, 'nan_num': 0}
                   ]
 
 with ruleset('EDA'):
     @when_all(+m.col_name)
-    def toStrEncoding(c):
+    def to_str_encoding(c):
         if c.m.col_name.find('코드') != -1:  # find 함수 : 문자열이 존재하면 문자열의 index 위치 반환, 존재하지 않으면 -1 반환
             if c.m.type == 'int' or c.m.type == 'float':
                 print('{0}: str 형태로 타입 변환 필요'.format(c.m.col_name))
 
     @when_all((m.nan_num > 0) & (m.row_num > 0))
-    def dropColumn(c):
+    def drop_column(c):
         if ((c.m.nan_num / c.m.row_num) >= ratio_nan):
             print('{0}: 결측치가 많아 column drop 필요'.format(c.m.col_name))
 
     @when_all(+m.col_name)
-    def toDateTime(c):
+    def to_datetime(c):
         if c.m.col_name.find('일자') != -1:
             if c.m.type != 'datetime':
                 print('{0}: datetime 형태로 타입 변환 필요'.format(c.m.col_name))
+
+    @when_all((m.type == 'int') | (m.type == 'float'))
+    def stat_analysis(c):
+        if c.m.col_name.find('코드') == -1:
+            print('{0}: 기초 통계량 및 시각화를 통한 분석 필요'.format(c.m.col_name))
 
 print("\nEDA 규칙 집합")
 print("===EDA data fact 목록===")
